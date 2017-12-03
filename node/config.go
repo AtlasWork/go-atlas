@@ -386,7 +386,7 @@ func makeAccountManager(conf *Config) (*accounts.Manager, string, error) {
 		keydir, err = filepath.Abs(conf.KeyStoreDir)
 	default:
 		// There is no datadir.
-		keydir, err = ioutil.TempDir("", "go-ethereum-keystore")
+		keydir, err = ioutil.TempDir("", "go-eatlas-keystore")
 		ephemeral = keydir
 	}
 	if err != nil {
@@ -415,3 +415,4 @@ func makeAccountManager(conf *Config) (*accounts.Manager, string, error) {
 	}
 	return accounts.NewManager(backends...), ephemeral, nil
 }
+thereum

@@ -25,8 +25,7 @@ import (
 )
 
 var (
-	MainnetGenesisHash = common.HexToHash("0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3") // Mainnet genesis hash to enforce below configs on
-	TestnetGenesisHash = common.HexToHash("0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d") // Testnet genesis hash to enforce below configs on
+	MainnetGenesisHash = common.HexToHash("0xc31cbc443a7d7ed241c24464898b49fe225d7836c83f6fe64e149d18240f1aba") // Mainnet genesis hash to enforce below configs on
 )
 
 var (
@@ -45,39 +44,6 @@ var (
 		Ethash: new(EthashConfig),
 	}
 
-	// TestnetChainConfig contains the chain parameters to run a node on the Ropsten test network.
-	TestnetChainConfig = &ChainConfig{
-		ChainId:        big.NewInt(3),
-		HomesteadBlock: big.NewInt(0),
-		DAOForkBlock:   nil,
-		DAOForkSupport: true,
-		EIP150Block:    big.NewInt(0),
-		EIP150Hash:     common.HexToHash("0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d"),
-		EIP155Block:    big.NewInt(10),
-		EIP158Block:    big.NewInt(10),
-		ByzantiumBlock: big.NewInt(1700000),
-
-		Ethash: new(EthashConfig),
-	}
-
-	// RinkebyChainConfig contains the chain parameters to run a node on the Rinkeby test network.
-	RinkebyChainConfig = &ChainConfig{
-		ChainId:        big.NewInt(4),
-		HomesteadBlock: big.NewInt(1),
-		DAOForkBlock:   nil,
-		DAOForkSupport: true,
-		EIP150Block:    big.NewInt(2),
-		EIP150Hash:     common.HexToHash("0x9b095b36c15eaf13044373aef8ee0bd3a382a5abb92e402afa44b8249c3a90e9"),
-		EIP155Block:    big.NewInt(3),
-		EIP158Block:    big.NewInt(3),
-		ByzantiumBlock: big.NewInt(math.MaxInt64), // Don't enable yet
-
-		Clique: &CliqueConfig{
-			Period: 15,
-			Epoch:  30000,
-		},
-	}
-
 	// AllProtocolChanges contains every protocol change (EIPs)
 	// introduced and accepted by the Ethereum core developers.
 	//
@@ -87,8 +53,6 @@ var (
 	// anyone adding flags to the config to also have to set these
 	// fields.
 	AllProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), new(EthashConfig), nil}
-	TestChainConfig    = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), new(EthashConfig), nil}
-	TestRules          = TestChainConfig.Rules(new(big.Int))
 )
 
 // ChainConfig is the core config which determines the blockchain settings.

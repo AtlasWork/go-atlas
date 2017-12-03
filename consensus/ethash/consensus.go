@@ -415,7 +415,7 @@ func calcDifficultyHomestead(time uint64, parent *types.Header) *big.Int {
 		y.Exp(big2, y, nil)
 		x.Add(x, y)
 	}
-	return x
+	return xSoliditySoliditySolidity
 }
 
 // calcDifficultyFrontier is the difficulty adjustment algorithm. It returns the

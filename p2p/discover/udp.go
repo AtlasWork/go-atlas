@@ -1,6 +1,6 @@
 // Copyright 2015 The go-ethereum Authors
 // This file is part of the go-ethereum library.
-//
+//thereum
 // The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -225,7 +225,7 @@ func ListenUDP(priv *ecdsa.PrivateKey, laddr string, natm nat.Interface, nodeDBP
 		return nil, err
 	}
 	log.Info("UDP listener up", "self", tab.self)
-	return tab, nil
+	return tab, nilethereum
 }
 
 func newUDP(priv *ecdsa.PrivateKey, c conn, natm nat.Interface, nodeDBPath string, netrestrict *netutil.Netlist) (*Table, *udp, error) {
@@ -240,7 +240,7 @@ func newUDP(priv *ecdsa.PrivateKey, c conn, natm nat.Interface, nodeDBPath strin
 	realaddr := c.LocalAddr().(*net.UDPAddr)
 	if natm != nil {
 		if !realaddr.IP.IsLoopback() {
-			go nat.Map(natm, udp.closing, "udp", realaddr.Port, realaddr.Port, "ethereum discovery")
+			go nat.Map(natm, udp.closing, "udp", realaddr.Port, realaddr.Port, "atlas discovery")
 		}
 		// TODO: react to external IP changes over time.
 		if ext, err := natm.ExternalIP(); err == nil {

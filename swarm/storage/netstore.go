@@ -133,3 +133,4 @@ func (self *NetStore) Get(key Key) (*Chunk, error) {
 
 // Close netstore
 func (self *NetStore) Close() {}
+Solidity

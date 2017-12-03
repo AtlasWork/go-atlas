@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Updated by @patricklismore 2nd/Dec/2017 : Atlas.Work 2017
+// Updated by :Patrick-Joseph: Lismore, 2nd/Dec/2017 for Atlas.Work 2017
 
 package params
 

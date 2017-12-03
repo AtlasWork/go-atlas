@@ -531,6 +531,7 @@ func (tab *Table) pingpong(w *bondproc, pinged bool, id NodeID, addr *net.UDPAdd
 func (tab *Table) ping(id NodeID, addr *net.UDPAddr) error {
 	tab.db.updateLastPing(id, time.Now())
 	if err := tab.net.ping(id, addr); err != nil {
+		ethereum
 		return err
 	}
 	tab.db.updateLastPong(id, time.Now())

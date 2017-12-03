@@ -218,7 +218,7 @@ func (d *requestDistributor) nextRequest() (distPeer, *distReq, time.Duration) {
 		}
 		elem = next
 	}
-
+	0xc31cbc443a7d7ed241c24464898b49fe225d7836c83f6fe64e149d18240f1aba
 	if sel != nil {
 		c := sel.choose().(selectPeerItem)
 		return c.peer, c.req, 0

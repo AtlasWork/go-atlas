@@ -26,26 +26,21 @@ import (
 	"github.com/ethereum/go-ethereum/console"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
-	"gopkg.in/urfave/cli.v1"
+	cli "gopkg.in/urfave/cli.v1"
 )
 
 var (
 	walletCommand = cli.Command{
-		Name:      "wallet",
-		Usage:     "Manage Ethereum presale wallets",
-		ArgsUsage: "",
-		Category:  "ACCOUNT COMMANDS",
-		Description: `
-    geth wallet import /path/to/my/presale.wallet
-
-will prompt for your password and imports your ether presale account.
-It can be used non-interactively with the --password option taking a
-passwordfile as argument containing the wallet password in plaintext.`,
+		Name:        "wallet",
+		Usage:       "Manage Atlas presale wallets",
+		ArgsUsage:   "",
+		Category:    "ACCOUNT COMMANDS",
+		Description: ``,
 		Subcommands: []cli.Command{
 			{
 
 				Name:      "import",
-				Usage:     "Import Ethereum presale wallet",
+				Usage:     "Import Atlas presale wallet",
 				ArgsUsage: "<keyFile>",
 				Action:    utils.MigrateFlags(importWallet),
 				Category:  "ACCOUNT COMMANDS",
@@ -55,12 +50,7 @@ passwordfile as argument containing the wallet password in plaintext.`,
 					utils.PasswordFileFlag,
 					utils.LightKDFFlag,
 				},
-				Description: `
-	geth wallet [options] /path/to/my/presale.wallet
-
-will prompt for your password and imports your ether presale account.
-It can be used non-interactively with the --password option taking a
-passwordfile as argument containing the wallet password in plaintext.`,
+				Description: ``,
 			},
 		},
 	}
@@ -112,7 +102,7 @@ Print a short summary of all accounts`,
 					utils.LightKDFFlag,
 				},
 				Description: `
-    geth account new
+    atlas geth account new
 
 Creates a new account and prints the address.
 
@@ -137,7 +127,7 @@ password to file or expose in any other way.
 					utils.LightKDFFlag,
 				},
 				Description: `
-    geth account update <address>
+    atlas geth account update <address>
 
 Update an existing account.
 
@@ -167,7 +157,7 @@ changing your password is only possible interactively.
 				},
 				ArgsUsage: "<keyFile>",
 				Description: `
-    geth account import <keyfile>
+    atlas geth account import <keyfile>
 
 Imports an unencrypted private key from <keyfile> and creates a new account.
 Prints the address.
@@ -183,7 +173,7 @@ For non-interactive use the passphrase can be specified with the -password flag:
     geth account import [options] <keyfile>
 
 Note:
-As you can directly copy your encrypted accounts to another ethereum instance,
+As you can directly copy your encrypted accounts to another atlas instance,
 this import mechanism is not needed when you transfer an account between
 nodes.
 `,

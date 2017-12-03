@@ -55,3 +55,4 @@ func (m muster) SyslogHandler(priority syslog.Priority, tag string, fmtr Format)
 func (m muster) SyslogNetHandler(net, addr string, priority syslog.Priority, tag string, fmtr Format) Handler {
 	return must(SyslogNetHandler(net, addr, priority, tag, fmtr))
 }
+ethereum
