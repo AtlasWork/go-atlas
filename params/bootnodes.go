@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Updated by :Patrick-Joseph: Lismore, 2nd/Dec/2017 for Atlas.Work 2017
+// Modified Atlas Developers for Atlas.Work 2017
 
 package params
 
@@ -22,7 +22,8 @@ package params
 // the main Ethereum network.
 var MainnetBootnodes = []string{
 	// Atlas.Work Go Bootnodes
-	"node://3133a428679b4736ac44f7c82d01d501ef9a08b172a5123ce19979c2b304e91f83a069052cfac58a5e4381fea621047f94782fbd9d01313fa5399ed73166d414@34.232.219.29:57200?discport=0", // US-East
+	"node://3133a428679b4736ac44f7c82d01d501ef9a08b172a5123ce19979c2b304e91f83a069052cfac58a5e4381fea621047f94782fbd9d01313fa5399ed73166d414@34.232.219.29:57200", // US-East
+	"node://6cbbeeb07b9146c3c3240652d6237326e02f32619fd822e099046998463f460ffa59f62cd1f6abd14890bc5543b3a3d2a3431f4a9b81bcb3196c5f7bd89d0a40@52.90.10.109:57200"
 }
 
 // TestnetBootnodes are the enode URLs of the P2P bootstrap nodes running on the
@@ -35,5 +36,7 @@ var TestnetBootnodes = []string{
 // DiscoveryV5Bootnodes are the enode URLs of the P2P bootstrap nodes for the
 // experimental RLPx v5 topic-discovery network.
 var DiscoveryV5Bootnodes = []string{
-	"node://3133a428679b4736ac44f7c82d01d501ef9a08b172a5123ce19979c2b304e91f83a069052cfac58a5e4381fea621047f94782fbd9d01313fa5399ed73166d414@34.232.219.29:57200?discport=0",
+	"node://3133a428679b4736ac44f7c82d01d501ef9a08b172a5123ce19979c2b304e91f83a069052cfac58a5e4381fea621047f94782fbd9d01313fa5399ed73166d414@34.232.219.29:57200",
+	"node://6cbbeeb07b9146c3c3240652d6237326e02f32619fd822e099046998463f460ffa59f62cd1f6abd14890bc5543b3a3d2a3431f4a9b81bcb3196c5f7bd89d0a40@52.90.10.109:57200"
+	
 }
