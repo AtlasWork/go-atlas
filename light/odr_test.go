@@ -77,7 +77,9 @@ func (odr *testOdr) Retrieve(ctx context.Context, req OdrRequest) error {
 		req.Receipts = core.GetBlockReceipts(odr.sdb, req.Hash, core.GetBlockNumber(odr.sdb, req.Hash))
 	case *TrieRequest:
 		t, _ := trie.New(req.Id.Root, odr.sdb)
-		req.Proof = t.Prove(req.Key)
+		nodes := NewNodeSet()
+		t.Prove(req.Key, 0, nodes)
+		req.Proof = nodes
 	case *CodeRequest:
 		req.Data, _ = odr.sdb.Get(req.Hash[:])
 	}
@@ -240,7 +242,7 @@ func testChainOdr(t *testing.T, protocol int, fn odrTestFn) {
 	gspec.MustCommit(ldb)
 	// Assemble the test environment
 	blockchain, _ := core.NewBlockChain(sdb, params.TestChainConfig, ethash.NewFullFaker(), vm.Config{})
-	gchain, _ := core.GenerateChain(params.TestChainConfig, genesis, sdb, 4, testChainGen)
+	gchain, _ := core.GenerateChain(params.TestChainConfig, genesis, ethash.NewFaker(), sdb, 4, testChainGen)
 	if _, err := blockchain.InsertChain(gchain); err != nil {
 		t.Fatal(err)
 	}

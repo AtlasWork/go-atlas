@@ -45,7 +45,6 @@ type LogConfig struct {
 	DisableMemory  bool // disable memory capture
 	DisableStack   bool // disable stack capture
 	DisableStorage bool // disable storage capture
-	FullStorage    bool // show full storage (slow)
 	Limit          int  // maximum length of output, but zero means unlimited
 }
 
@@ -85,7 +84,9 @@ func (s *StructLog) OpName() string {
 // Note that reference types are actual VM data structures; make copies
 // if you need to retain them beyond the current call.
 type Tracer interface {
+	CaptureStart(from common.Address, to common.Address, call bool, input []byte, gas uint64, value *big.Int) error
 	CaptureState(env *EVM, pc uint64, op OpCode, gas, cost uint64, memory *Memory, stack *Stack, contract *Contract, depth int, err error) error
+	CaptureFault(env *EVM, pc uint64, op OpCode, gas, cost uint64, memory *Memory, stack *Stack, contract *Contract, depth int, err error) error
 	CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) error
 }
 
@@ -112,6 +113,10 @@ func NewStructLogger(cfg *LogConfig) *StructLogger {
 	return logger
 }
 
+func (l *StructLogger) CaptureStart(from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) error {
+	return nil
+}
+
 // CaptureState logs a new structured log message and pushes it out to the environment
 //
 // CaptureState also tracks SSTORE ops to track dirty values.
@@ -136,14 +141,13 @@ func (l *StructLogger) CaptureState(env *EVM, pc uint64, op OpCode, gas, cost ui
 		)
 		l.changedValues[contract.Address()][address] = value
 	}
-	// copy a snapstot of the current memory state to a new buffer
+	// Copy a snapstot of the current memory state to a new buffer
 	var mem []byte
 	if !l.cfg.DisableMemory {
 		mem = make([]byte, len(memory.Data()))
 		copy(mem, memory.Data())
 	}
-
-	// copy a snapshot of the current stack state to a new buffer
+	// Copy a snapshot of the current stack state to a new buffer
 	var stck []*big.Int
 	if !l.cfg.DisableStack {
 		stck = make([]*big.Int, len(stack.Data()))
@@ -151,31 +155,19 @@ func (l *StructLogger) CaptureState(env *EVM, pc uint64, op OpCode, gas, cost ui
 			stck[i] = new(big.Int).Set(item)
 		}
 	}
-
-	// Copy the storage based on the settings specified in the log config. If full storage
-	// is disabled (default) we can use the simple Storage.Copy method, otherwise we use
-	// the state object to query for all values (slow process).
+	// Copy a snapshot of the current storage to a new container
 	var storage Storage
 	if !l.cfg.DisableStorage {
-		if l.cfg.FullStorage {
-			storage = make(Storage)
-			// Get the contract account and loop over each storage entry. This may involve looping over
-			// the trie and is a very expensive process.
-
-			env.StateDB.ForEachStorage(contract.Address(), func(key, value common.Hash) bool {
-				storage[key] = value
-				// Return true, indicating we'd like to continue.
-				return true
-			})
-		} else {
-			// copy a snapshot of the current storage to a new container.
-			storage = l.changedValues[contract.Address()].Copy()
-		}
+		storage = l.changedValues[contract.Address()].Copy()
 	}
 	// create a new snaptshot of the EVM.
 	log := StructLog{pc, op, gas, cost, mem, memory.Len(), stck, storage, depth, err}
 
 	l.logs = append(l.logs, log)
+	return nil
+}
+
+func (l *StructLogger) CaptureFault(env *EVM, pc uint64, op OpCode, gas, cost uint64, memory *Memory, stack *Stack, contract *Contract, depth int, err error) error {
 	return nil
 }
 

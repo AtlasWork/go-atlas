@@ -32,6 +32,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/hashicorp/golang-lru"
 )
 
 var (
@@ -92,12 +93,10 @@ func NewLightChain(odr OdrBackend, config *params.ChainConfig, engine consensus.
 	}
 	bc.genesisBlock, _ = bc.GetBlockByNumber(NoOdr, 0)
 	if bc.genesisBlock == nil {
-		return nil, core.ErrNoGenesisethereum
+		return nil, core.ErrNoGenesis
 	}
-	if bc.genesisBlock.Hash() == params.MainnetGenesisHash {
-		// add trusted CHT
-		WriteTrustedCht(bc.chainDb, TrustedCht{Number: 1040, Root: common.HexToHash("0xc31cbc443a7d7ed241c24464898b49fe225d7836c83f6fe64e149d18240f1aba")})
-		log.Info("Added trusted Atlas CHT for mainnet")
+	if cp, ok := trustedCheckpoints[bc.genesisBlock.Hash()]; ok {
+		bc.addTrustedCheckpoint(cp)
 	}
 
 	if err := bc.loadLastState(); err != nil {
@@ -112,6 +111,22 @@ func NewLightChain(odr OdrBackend, config *params.ChainConfig, engine consensus.
 		}
 	}
 	return bc, nil
+}
+
+// addTrustedCheckpoint adds a trusted checkpoint to the blockchain
+func (self *LightChain) addTrustedCheckpoint(cp trustedCheckpoint) {
+	if self.odr.ChtIndexer() != nil {
+		StoreChtRoot(self.chainDb, cp.sectionIdx, cp.sectionHead, cp.chtRoot)
+		self.odr.ChtIndexer().AddKnownSectionHead(cp.sectionIdx, cp.sectionHead)
+	}
+	if self.odr.BloomTrieIndexer() != nil {
+		StoreBloomTrieRoot(self.chainDb, cp.sectionIdx, cp.sectionHead, cp.bloomTrieRoot)
+		self.odr.BloomTrieIndexer().AddKnownSectionHead(cp.sectionIdx, cp.sectionHead)
+	}
+	if self.odr.BloomIndexer() != nil {
+		self.odr.BloomIndexer().AddKnownSectionHead(cp.sectionIdx, cp.sectionHead)
+	}
+	log.Info("Added trusted checkpoint", "chain name", cp.name)
 }
 
 func (self *LightChain) getProcInterrupt() bool {
@@ -442,11 +457,17 @@ func (self *LightChain) GetHeaderByNumberOdr(ctx context.Context, number uint64)
 	return GetHeaderByNumber(ctx, self.odr, number)
 }
 
+// Config retrieves the header chain's chain configuration.
+func (self *LightChain) Config() *params.ChainConfig { return self.hc.Config() }
+
 func (self *LightChain) SyncCht(ctx context.Context) bool {
+	if self.odr.ChtIndexer() == nil {
+		return false
+	}
 	headNum := self.CurrentHeader().Number.Uint64()
-	cht := GetTrustedCht(self.chainDb)
-	if headNum+1 < cht.Number*ChtFrequency {
-		num := cht.Number*ChtFrequency - 1
+	chtCount, _, _ := self.odr.ChtIndexer().Sections()
+	if headNum+1 < chtCount*ChtFrequency {
+		num := chtCount*ChtFrequency - 1
 		header, err := GetHeaderByNumber(ctx, self.odr, num)
 		if header != nil && err == nil {
 			self.mu.Lock()

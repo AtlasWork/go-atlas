@@ -97,4 +97,3 @@ func (self *LDBDatabase) Close() {
 	// Close the leveldb database
 	self.db.Close()
 }
-SoliditySolidity

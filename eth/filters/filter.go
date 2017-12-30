@@ -19,7 +19,6 @@ package filters
 import (
 	"context"
 	"math/big"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -60,7 +59,9 @@ type Filter struct {
 // New creates a new filter which uses a bloom filter on blocks to figure out whether
 // a particular block is interesting or not.
 func New(backend Backend, begin, end int64, addresses []common.Address, topics [][]common.Hash) *Filter {
-	// Flatten the address and topic filter clauses into a single filter system
+	// Flatten the address and topic filter clauses into a single bloombits filter
+	// system. Since the bloombits are not positional, nil topics are permitted,
+	// which get flattened into a nil byte slice.
 	var filters [][][]byte
 	if len(addresses) > 0 {
 		filter := make([][]byte, len(addresses))
@@ -134,11 +135,11 @@ func (f *Filter) indexedLogs(ctx context.Context, end uint64) ([]*types.Log, err
 	// Create a matcher session and request servicing from the backend
 	matches := make(chan uint64, 64)
 
-	session, err := f.matcher.Start(uint64(f.begin), end, matches)
+	session, err := f.matcher.Start(ctx, uint64(f.begin), end, matches)
 	if err != nil {
 		return nil, err
 	}
-	defer session.Close(time.Second)
+	defer session.Close()
 
 	f.backend.ServiceFilter(ctx, session)
 
@@ -150,9 +151,14 @@ func (f *Filter) indexedLogs(ctx context.Context, end uint64) ([]*types.Log, err
 		case number, ok := <-matches:
 			// Abort if all matches have been fulfilled
 			if !ok {
-				f.begin = int64(end) + 1
-				return logs, nil
+				err := session.Error()
+				if err == nil {
+					f.begin = int64(end) + 1
+				}
+				return logs, err
 			}
+			f.begin = int64(number) + 1
+
 			// Retrieve the suggested block and pull any truly matching logs
 			header, err := f.backend.HeaderByNumber(ctx, rpc.BlockNumber(number))
 			if header == nil || err != nil {
@@ -201,7 +207,7 @@ func (f *Filter) checkMatches(ctx context.Context, header *types.Header) (logs [
 	}
 	var unfiltered []*types.Log
 	for _, receipt := range receipts {
-		unfiltered = append(unfiltered, ([]*types.Log)(receipt.Logs)...)
+		unfiltered = append(unfiltered, receipt.Logs...)
 	}
 	logs = filterLogs(unfiltered, nil, nil, f.addresses, f.topics)
 	if len(logs) > 0 {
@@ -235,32 +241,24 @@ Logs:
 		if len(addresses) > 0 && !includes(addresses, log.Address) {
 			continue
 		}
-
-		logTopics := make([]common.Hash, len(topics))
-		copy(logTopics, log.Topics)
-
 		// If the to filtered topics is greater than the amount of topics in logs, skip.
 		if len(topics) > len(log.Topics) {
 			continue Logs
 		}
-
 		for i, topics := range topics {
-			var match bool
+			match := len(topics) == 0 // empty rule set == wildcard
 			for _, topic := range topics {
-				// common.Hash{} is a match all (wildcard)
-				if (topic == common.Hash{}) || log.Topics[i] == topic {
+				if log.Topics[i] == topic {
 					match = true
 					break
 				}
 			}
-
 			if !match {
 				continue Logs
 			}
 		}
 		ret = append(ret, log)
 	}
-
 	return ret
 }
 
@@ -273,16 +271,15 @@ func bloomFilter(bloom types.Bloom, addresses []common.Address, topics [][]commo
 				break
 			}
 		}
-
 		if !included {
 			return false
 		}
 	}
 
 	for _, sub := range topics {
-		var included bool
+		included := len(sub) == 0 // empty rule set == wildcard
 		for _, topic := range sub {
-			if (topic == common.Hash{}) || types.BloomLookup(bloom, topic) {
+			if types.BloomLookup(bloom, topic) {
 				included = true
 				break
 			}
@@ -291,6 +288,5 @@ func bloomFilter(bloom types.Bloom, addresses []common.Address, topics [][]commo
 			return false
 		}
 	}
-
 	return true
 }
