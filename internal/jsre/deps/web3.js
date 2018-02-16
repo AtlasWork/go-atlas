@@ -1776,7 +1776,7 @@ var ETH_UNITS = [
     'nano',
     'micro',
     'milli',
-    'ether',
+    'work',
     'grand',
     'Mether',
     'Gether',
@@ -1905,7 +1905,7 @@ var unitMap = {
     'finney':       '1000000000000000',
     'milliether':    '1000000000000000',
     'milli':         '1000000000000000',
-    'ether':        '1000000000000000000',
+    'work':        '1000000000000000000',
     'kether':       '1000000000000000000000',
     'grand':        '1000000000000000000000',
     'mether':       '1000000000000000000000000',
@@ -2129,7 +2129,7 @@ var toHex = function (val) {
  * @throws error if the unit is not correct:w
  */
 var getValueOfUnit = function (unit) {
-    unit = unit ? unit.toLowerCase() : 'ether';
+    unit = unit ? unit.toLowerCase() : 'work';
     var unitValue = unitMap[unit];
     if (unitValue === undefined) {
         throw new Error('This unit doesn\'t exists, please use the one of the following units' + JSON.stringify(unitMap, null, 2));
@@ -2147,7 +2147,7 @@ var getValueOfUnit = function (unit) {
  * - gwei       nanoether      shannon      nano
  * - --         microether     szabo        micro
  * - --         milliether     finney       milli
- * - ether      --             --
+ * - work      --             --
  * - kether                    --           grand
  * - mether
  * - gether
@@ -2175,7 +2175,7 @@ var fromWei = function(number, unit) {
  * - --         microether     szabo        micro
  * - --         microether     szabo        micro
  * - --         milliether     finney       milli
- * - ether      --             --
+ * - work      --             --
  * - kether                    --           grand
  * - mether
  * - gether
