@@ -22,6 +22,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -42,15 +43,21 @@ var DefaultConfig = Config{
 		DatasetsInMem:  1,
 		DatasetsOnDisk: 2,
 	},
-	NetworkId:     1,
-	LightPeers:    20,
-	DatabaseCache: 128,
-	GasPrice:      big.NewInt(18 * params.Shannon),
+	NetworkId:      1,
+	LightPeers:     100,
+	DatabaseCache:  512,
+	TrieCleanCache: 256,
+	TrieDirtyCache: 256,
+	TrieTimeout:    60 * time.Minute,
+	MinerGasFloor:  8000000,
+	MinerGasCeil:   8000000,
+	MinerGasPrice:  big.NewInt(params.GWei),
+	MinerRecommit:  3 * time.Second,
 
 	TxPool: core.DefaultTxPoolConfig,
 	GPO: gasprice.Config{
-		Blocks:     10,
-		Percentile: 50,
+		Blocks:     20,
+		Percentile: 60,
 	},
 }
 
@@ -78,6 +85,10 @@ type Config struct {
 	// Protocol options
 	NetworkId uint64 // Network ID to use for selecting peers to connect to
 	SyncMode  downloader.SyncMode
+	NoPruning bool
+
+	// Whitelist of required block number -> hash values to accept
+	Whitelist map[uint64]common.Hash `toml:"-"`
 
 	// Light client options
 	LightServ  int `toml:",omitempty"` // Maximum percentage of time allowed for serving LES requests
@@ -87,12 +98,19 @@ type Config struct {
 	SkipBcVersionCheck bool `toml:"-"`
 	DatabaseHandles    int  `toml:"-"`
 	DatabaseCache      int
+	TrieCleanCache     int
+	TrieDirtyCache     int
+	TrieTimeout        time.Duration
 
 	// Mining-related options
-	Etherbase    common.Address `toml:",omitempty"`
-	MinerThreads int            `toml:",omitempty"`
-	ExtraData    []byte         `toml:",omitempty"`
-	GasPrice     *big.Int
+	Etherbase      common.Address `toml:",omitempty"`
+	MinerNotify    []string       `toml:",omitempty"`
+	MinerExtraData []byte         `toml:",omitempty"`
+	MinerGasFloor  uint64
+	MinerGasCeil   uint64
+	MinerGasPrice  *big.Int
+	MinerRecommit  time.Duration
+	MinerNoverify  bool
 
 	// Ethash options
 	Ethash ethash.Config
@@ -108,8 +126,17 @@ type Config struct {
 
 	// Miscellaneous options
 	DocRoot string `toml:"-"`
+
+	// Type of the EWASM interpreter ("" for default)
+	EWASMInterpreter string
+
+	// Type of the EVM interpreter ("" for default)
+	EVMInterpreter string
+
+	// Constantinople block override (TODO: remove after the fork)
+	ConstantinopleOverride *big.Int
 }
 
 type configMarshaling struct {
-	ExtraData hexutil.Bytes
+	MinerExtraData hexutil.Bytes
 }

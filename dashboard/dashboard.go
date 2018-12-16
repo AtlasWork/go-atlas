@@ -16,31 +16,43 @@
 
 package dashboard
 
-//go:generate ./assets/node_modules/.bin/webpack --config ./assets/webpack.config.js --context ./assets
-//go:generate go-bindata -nometadata -o assets.go -prefix assets -nocompress -pkg dashboard assets/public/...
-//go:generate gofmt -s -w assets.go
-//go:generate sed -i "s#var _public#//nolint:misspell\\n&#" assets.go
+//go:generate yarn --cwd ./assets install
+//go:generate yarn --cwd ./assets build
+//go:generate go-bindata -nometadata -o assets.go -prefix assets -nocompress -pkg dashboard assets/index.html assets/bundle.js
+//go:generate sh -c "sed 's#var _bundleJs#//nolint:misspell\\\n&#' assets.go > assets.go.tmp && mv assets.go.tmp assets.go"
+//go:generate sh -c "sed 's#var _indexHtml#//nolint:misspell\\\n&#' assets.go > assets.go.tmp && mv assets.go.tmp assets.go"
+//go:generate gofmt -w -s assets.go
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
-	"path/filepath"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"io"
+
+	"github.com/elastic/gosigar"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/rcrowley/go-metrics"
+	"github.com/mohae/deepcopy"
 	"golang.org/x/net/websocket"
 )
 
 const (
-	memorySampleLimit  = 200 // Maximum number of memory data samples
-	trafficSampleLimit = 200 // Maximum number of traffic data samples
+	activeMemorySampleLimit   = 200 // Maximum number of active memory data samples
+	virtualMemorySampleLimit  = 200 // Maximum number of virtual memory data samples
+	networkIngressSampleLimit = 200 // Maximum number of network ingress data samples
+	networkEgressSampleLimit  = 200 // Maximum number of network egress data samples
+	processCPUSampleLimit     = 200 // Maximum number of process cpu data samples
+	systemCPUSampleLimit      = 200 // Maximum number of system cpu data samples
+	diskReadSampleLimit       = 200 // Maximum number of disk read data samples
+	diskWriteSampleLimit      = 200 // Maximum number of disk write data samples
 )
 
 var nextID uint32 // Next connection id
@@ -51,8 +63,10 @@ type Dashboard struct {
 
 	listener net.Listener
 	conns    map[uint32]*client // Currently live websocket connections
-	charts   *HomeMessage
+	history  *Message
 	lock     sync.RWMutex // Lock protecting the dashboard's internals
+
+	logdir string
 
 	quit chan chan error // Channel used for graceful exit
 	wg   sync.WaitGroup
@@ -61,34 +75,66 @@ type Dashboard struct {
 // client represents active websocket connection with a remote browser.
 type client struct {
 	conn   *websocket.Conn // Particular live websocket connection
-	msg    chan Message    // Message queue for the update messages
+	msg    chan *Message   // Message queue for the update messages
 	logger log.Logger      // Logger for the particular live websocket connection
 }
 
 // New creates a new dashboard instance with the given configuration.
-func New(config *Config) (*Dashboard, error) {
+func New(config *Config, commit string, logdir string) *Dashboard {
+	now := time.Now()
+	versionMeta := ""
+	if len(params.VersionMeta) > 0 {
+		versionMeta = fmt.Sprintf(" (%s)", params.VersionMeta)
+	}
 	return &Dashboard{
 		conns:  make(map[uint32]*client),
 		config: config,
 		quit:   make(chan chan error),
-		charts: &HomeMessage{
-			Memory:  &Chart{},
-			Traffic: &Chart{},
+		history: &Message{
+			General: &GeneralMessage{
+				Commit:  commit,
+				Version: fmt.Sprintf("v%d.%d.%d%s", params.VersionMajor, params.VersionMinor, params.VersionPatch, versionMeta),
+			},
+			System: &SystemMessage{
+				ActiveMemory:   emptyChartEntries(now, activeMemorySampleLimit, config.Refresh),
+				VirtualMemory:  emptyChartEntries(now, virtualMemorySampleLimit, config.Refresh),
+				NetworkIngress: emptyChartEntries(now, networkIngressSampleLimit, config.Refresh),
+				NetworkEgress:  emptyChartEntries(now, networkEgressSampleLimit, config.Refresh),
+				ProcessCPU:     emptyChartEntries(now, processCPUSampleLimit, config.Refresh),
+				SystemCPU:      emptyChartEntries(now, systemCPUSampleLimit, config.Refresh),
+				DiskRead:       emptyChartEntries(now, diskReadSampleLimit, config.Refresh),
+				DiskWrite:      emptyChartEntries(now, diskWriteSampleLimit, config.Refresh),
+			},
 		},
-	}, nil
+		logdir: logdir,
+	}
 }
 
-// Protocols is a meaningless implementation of node.Service.
+// emptyChartEntries returns a ChartEntry array containing limit number of empty samples.
+func emptyChartEntries(t time.Time, limit int, refresh time.Duration) ChartEntries {
+	ce := make(ChartEntries, limit)
+	for i := 0; i < limit; i++ {
+		ce[i] = &ChartEntry{
+			Time: t.Add(-time.Duration(i) * refresh),
+		}
+	}
+	return ce
+}
+
+// Protocols implements the node.Service interface.
 func (db *Dashboard) Protocols() []p2p.Protocol { return nil }
 
-// APIs is a meaningless implementation of node.Service.
+// APIs implements the node.Service interface.
 func (db *Dashboard) APIs() []rpc.API { return nil }
 
-// Start implements node.Service, starting the data collection thread and the listening server of the dashboard.
+// Start starts the data collection thread and the listening server of the dashboard.
+// Implements the node.Service interface.
 func (db *Dashboard) Start(server *p2p.Server) error {
+	log.Info("Starting dashboard")
+
 	db.wg.Add(2)
 	go db.collectData()
-	go db.collectLogs() // In case of removing this line change 2 back to 1 in wg.Add.
+	go db.streamLogs()
 
 	http.HandleFunc("/", db.webHandler)
 	http.Handle("/api", websocket.Handler(db.apiHandler))
@@ -104,7 +150,8 @@ func (db *Dashboard) Start(server *p2p.Server) error {
 	return nil
 }
 
-// Stop implements node.Service, stopping the data collection thread and the connection listener of the dashboard.
+// Stop stops the data collection thread and the connection listener of the dashboard.
+// Implements the node.Service interface.
 func (db *Dashboard) Stop() error {
 	// Close the connection listener.
 	var errs []error
@@ -146,20 +193,9 @@ func (db *Dashboard) webHandler(w http.ResponseWriter, r *http.Request) {
 
 	path := r.URL.String()
 	if path == "/" {
-		path = "/dashboard.html"
+		path = "/index.html"
 	}
-	// If the path of the assets is manually set
-	if db.config.Assets != "" {
-		blob, err := ioutil.ReadFile(filepath.Join(db.config.Assets, path))
-		if err != nil {
-			log.Warn("Failed to read file", "path", path, "err", err)
-			http.Error(w, "not found", http.StatusNotFound)
-			return
-		}
-		w.Write(blob)
-		return
-	}
-	blob, err := Asset(filepath.Join("public", path))
+	blob, err := Asset(path[1:])
 	if err != nil {
 		log.Warn("Failed to load the asset", "path", path, "err", err)
 		http.Error(w, "not found", http.StatusNotFound)
@@ -173,7 +209,7 @@ func (db *Dashboard) apiHandler(conn *websocket.Conn) {
 	id := atomic.AddUint32(&nextID, 1)
 	client := &client{
 		conn:   conn,
-		msg:    make(chan Message, 128),
+		msg:    make(chan *Message, 128),
 		logger: log.New("id", id),
 	}
 	done := make(chan struct{})
@@ -196,19 +232,11 @@ func (db *Dashboard) apiHandler(conn *websocket.Conn) {
 			}
 		}
 	}()
-	// Send the past data.
-	client.msg <- Message{
-		Home: &HomeMessage{
-			Memory: &Chart{
-				History: db.charts.Memory.History,
-			},
-			Traffic: &Chart{
-				History: db.charts.Traffic.History,
-			},
-		},
-	}
-	// Start tracking the connection and drop at connection loss.
+
 	db.lock.Lock()
+	// Send the past data.
+	client.msg <- deepcopy.Copy(db.history).(*Message)
+	// Start tracking the connection and drop at connection loss.
 	db.conns[id] = client
 	db.lock.Unlock()
 	defer func() {
@@ -217,12 +245,30 @@ func (db *Dashboard) apiHandler(conn *websocket.Conn) {
 		db.lock.Unlock()
 	}()
 	for {
-		fail := []byte{}
-		if _, err := conn.Read(fail); err != nil {
+		r := new(Request)
+		if err := websocket.JSON.Receive(conn, r); err != nil {
+			if err != io.EOF {
+				client.logger.Warn("Failed to receive request", "err", err)
+			}
 			close(done)
 			return
 		}
-		// Ignore all messages
+		if r.Logs != nil {
+			db.handleLogRequest(r.Logs, client)
+		}
+	}
+}
+
+// meterCollector returns a function, which retrieves a specific meter.
+func meterCollector(name string) func() int64 {
+	if metric := metrics.DefaultRegistry.Get(name); metric != nil {
+		m := metric.(metrics.Meter)
+		return func() int64 {
+			return m.Count()
+		}
+	}
+	return func() int64 {
+		return 0
 	}
 }
 
@@ -230,66 +276,115 @@ func (db *Dashboard) apiHandler(conn *websocket.Conn) {
 func (db *Dashboard) collectData() {
 	defer db.wg.Done()
 
+	systemCPUUsage := gosigar.Cpu{}
+	systemCPUUsage.Get()
+	var (
+		mem runtime.MemStats
+
+		collectNetworkIngress = meterCollector("p2p/InboundTraffic")
+		collectNetworkEgress  = meterCollector("p2p/OutboundTraffic")
+		collectDiskRead       = meterCollector("eth/db/chaindata/disk/read")
+		collectDiskWrite      = meterCollector("eth/db/chaindata/disk/write")
+
+		prevNetworkIngress = collectNetworkIngress()
+		prevNetworkEgress  = collectNetworkEgress()
+		prevProcessCPUTime = getProcessCPUTime()
+		prevSystemCPUUsage = systemCPUUsage
+		prevDiskRead       = collectDiskRead()
+		prevDiskWrite      = collectDiskWrite()
+
+		frequency = float64(db.config.Refresh / time.Second)
+		numCPU    = float64(runtime.NumCPU())
+	)
+
 	for {
 		select {
 		case errc := <-db.quit:
 			errc <- nil
 			return
 		case <-time.After(db.config.Refresh):
-			inboundTraffic := metrics.DefaultRegistry.Get("p2p/InboundTraffic").(metrics.Meter).Rate1()
-			memoryInUse := metrics.DefaultRegistry.Get("system/memory/inuse").(metrics.Meter).Rate1()
+			systemCPUUsage.Get()
+			var (
+				curNetworkIngress = collectNetworkIngress()
+				curNetworkEgress  = collectNetworkEgress()
+				curProcessCPUTime = getProcessCPUTime()
+				curSystemCPUUsage = systemCPUUsage
+				curDiskRead       = collectDiskRead()
+				curDiskWrite      = collectDiskWrite()
+
+				deltaNetworkIngress = float64(curNetworkIngress - prevNetworkIngress)
+				deltaNetworkEgress  = float64(curNetworkEgress - prevNetworkEgress)
+				deltaProcessCPUTime = curProcessCPUTime - prevProcessCPUTime
+				deltaSystemCPUUsage = curSystemCPUUsage.Delta(prevSystemCPUUsage)
+				deltaDiskRead       = curDiskRead - prevDiskRead
+				deltaDiskWrite      = curDiskWrite - prevDiskWrite
+			)
+			prevNetworkIngress = curNetworkIngress
+			prevNetworkEgress = curNetworkEgress
+			prevProcessCPUTime = curProcessCPUTime
+			prevSystemCPUUsage = curSystemCPUUsage
+			prevDiskRead = curDiskRead
+			prevDiskWrite = curDiskWrite
+
 			now := time.Now()
-			memory := &ChartEntry{
+
+			runtime.ReadMemStats(&mem)
+			activeMemory := &ChartEntry{
 				Time:  now,
-				Value: memoryInUse,
+				Value: float64(mem.Alloc) / frequency,
 			}
-			traffic := &ChartEntry{
+			virtualMemory := &ChartEntry{
 				Time:  now,
-				Value: inboundTraffic,
+				Value: float64(mem.Sys) / frequency,
 			}
-			first := 0
-			if len(db.charts.Memory.History) == memorySampleLimit {
-				first = 1
+			networkIngress := &ChartEntry{
+				Time:  now,
+				Value: deltaNetworkIngress / frequency,
 			}
-			db.charts.Memory.History = append(db.charts.Memory.History[first:], memory)
-			first = 0
-			if len(db.charts.Traffic.History) == trafficSampleLimit {
-				first = 1
+			networkEgress := &ChartEntry{
+				Time:  now,
+				Value: deltaNetworkEgress / frequency,
 			}
-			db.charts.Traffic.History = append(db.charts.Traffic.History[first:], traffic)
+			processCPU := &ChartEntry{
+				Time:  now,
+				Value: deltaProcessCPUTime / frequency / numCPU * 100,
+			}
+			systemCPU := &ChartEntry{
+				Time:  now,
+				Value: float64(deltaSystemCPUUsage.Sys+deltaSystemCPUUsage.User) / frequency / numCPU,
+			}
+			diskRead := &ChartEntry{
+				Time:  now,
+				Value: float64(deltaDiskRead) / frequency,
+			}
+			diskWrite := &ChartEntry{
+				Time:  now,
+				Value: float64(deltaDiskWrite) / frequency,
+			}
+			sys := db.history.System
+			db.lock.Lock()
+			sys.ActiveMemory = append(sys.ActiveMemory[1:], activeMemory)
+			sys.VirtualMemory = append(sys.VirtualMemory[1:], virtualMemory)
+			sys.NetworkIngress = append(sys.NetworkIngress[1:], networkIngress)
+			sys.NetworkEgress = append(sys.NetworkEgress[1:], networkEgress)
+			sys.ProcessCPU = append(sys.ProcessCPU[1:], processCPU)
+			sys.SystemCPU = append(sys.SystemCPU[1:], systemCPU)
+			sys.DiskRead = append(sys.DiskRead[1:], diskRead)
+			sys.DiskWrite = append(sys.DiskWrite[1:], diskWrite)
+			db.lock.Unlock()
 
 			db.sendToAll(&Message{
-				Home: &HomeMessage{
-					Memory: &Chart{
-						New: memory,
-					},
-					Traffic: &Chart{
-						New: traffic,
-					},
+				System: &SystemMessage{
+					ActiveMemory:   ChartEntries{activeMemory},
+					VirtualMemory:  ChartEntries{virtualMemory},
+					NetworkIngress: ChartEntries{networkIngress},
+					NetworkEgress:  ChartEntries{networkEgress},
+					ProcessCPU:     ChartEntries{processCPU},
+					SystemCPU:      ChartEntries{systemCPU},
+					DiskRead:       ChartEntries{diskRead},
+					DiskWrite:      ChartEntries{diskWrite},
 				},
 			})
-		}
-	}
-}
-
-// collectLogs collects and sends the logs to the active dashboards.
-func (db *Dashboard) collectLogs() {
-	defer db.wg.Done()
-
-	id := 1
-	// TODO (kurkomisi): log collection comes here.
-	for {
-		select {
-		case errc := <-db.quit:
-			errc <- nil
-			return
-		case <-time.After(db.config.Refresh / 2):
-			db.sendToAll(&Message{
-				Logs: &LogsMessage{
-					Log: fmt.Sprintf("%-4d: This is a fake log.", id),
-				},
-			})
-			id++
 		}
 	}
 }
@@ -299,7 +394,7 @@ func (db *Dashboard) sendToAll(msg *Message) {
 	db.lock.Lock()
 	for _, c := range db.conns {
 		select {
-		case c.msg <- *msg:
+		case c.msg <- msg:
 		default:
 			c.conn.Close()
 		}

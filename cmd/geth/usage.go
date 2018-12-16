@@ -22,6 +22,8 @@ import (
 	"io"
 	"sort"
 
+	"strings"
+
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/internal/debug"
 	"gopkg.in/urfave/cli.v1"
@@ -32,7 +34,7 @@ import (
 var AppHelpTemplate = `NAME:
    {{.App.Name}} - {{.App.Usage}}
 
-   Copyright 2013-2017 The go-ethereum Authors
+   Copyright 2013-2018 The go-ethereum Authors
 
 USAGE:
    {{.App.HelpName}} [options]{{if .App.Commands}} command [command options]{{end}} {{if .App.ArgsUsage}}{{.App.ArgsUsage}}{{else}}[arguments...]{{end}}
@@ -74,11 +76,20 @@ var AppHelpFlagGroups = []flagGroup{
 			utils.TestnetFlag,
 			utils.RinkebyFlag,
 			utils.SyncModeFlag,
+			utils.GCModeFlag,
 			utils.EthStatsURLFlag,
 			utils.IdentityFlag,
 			utils.LightServFlag,
 			utils.LightPeersFlag,
 			utils.LightKDFFlag,
+			utils.WhitelistFlag,
+		},
+	},
+	{
+		Name: "DEVELOPER CHAIN",
+		Flags: []cli.Flag{
+			utils.DeveloperFlag,
+			utils.DeveloperPeriodFlag,
 		},
 	},
 	{Name: "DEVELOPER CHAIN",
@@ -111,6 +122,7 @@ var AppHelpFlagGroups = []flagGroup{
 	{
 		Name: "TRANSACTION POOL",
 		Flags: []cli.Flag{
+			utils.TxPoolLocalsFlag,
 			utils.TxPoolNoLocalsFlag,
 			utils.TxPoolJournalFlag,
 			utils.TxPoolRejournalFlag,
@@ -127,6 +139,9 @@ var AppHelpFlagGroups = []flagGroup{
 		Name: "PERFORMANCE TUNING",
 		Flags: []cli.Flag{
 			utils.CacheFlag,
+			utils.CacheDatabaseFlag,
+			utils.CacheTrieFlag,
+			utils.CacheGCFlag,
 			utils.TrieCacheGenFlag,
 		},
 	},
@@ -152,6 +167,7 @@ var AppHelpFlagGroups = []flagGroup{
 			utils.IPCDisabledFlag,
 			utils.IPCPathFlag,
 			utils.RPCCORSDomainFlag,
+			utils.RPCVirtualHostsFlag,
 			utils.JSpathFlag,
 			utils.ExecFlag,
 			utils.PreloadJSFlag,
@@ -179,10 +195,14 @@ var AppHelpFlagGroups = []flagGroup{
 		Flags: []cli.Flag{
 			utils.MiningEnabledFlag,
 			utils.MinerThreadsFlag,
-			utils.EtherbaseFlag,
-			utils.TargetGasLimitFlag,
-			utils.GasPriceFlag,
-			utils.ExtraDataFlag,
+			utils.MinerNotifyFlag,
+			utils.MinerGasPriceFlag,
+			utils.MinerGasTargetFlag,
+			utils.MinerGasLimitFlag,
+			utils.MinerEtherbaseFlag,
+			utils.MinerExtraDataFlag,
+			utils.MinerRecommitIntervalFlag,
+			utils.MinerNoVerfiyFlag,
 		},
 	},
 	{
@@ -196,15 +216,28 @@ var AppHelpFlagGroups = []flagGroup{
 		Name: "VIRTUAL MACHINE",
 		Flags: []cli.Flag{
 			utils.VMEnableDebugFlag,
+			utils.EVMInterpreterFlag,
+			utils.EWASMInterpreterFlag,
 		},
 	},
 	{
 		Name: "LOGGING AND DEBUGGING",
 		Flags: append([]cli.Flag{
-			utils.MetricsEnabledFlag,
 			utils.FakePoWFlag,
 			utils.NoCompactionFlag,
 		}, debug.Flags...),
+	},
+	{
+		Name: "METRICS AND STATS",
+		Flags: []cli.Flag{
+			utils.MetricsEnabledFlag,
+			utils.MetricsEnableInfluxDBFlag,
+			utils.MetricsInfluxDBEndpointFlag,
+			utils.MetricsInfluxDBDatabaseFlag,
+			utils.MetricsInfluxDBUsernameFlag,
+			utils.MetricsInfluxDBPasswordFlag,
+			utils.MetricsInfluxDBHostTagFlag,
+		},
 	},
 	{
 		Name:  "WHISPER (EXPERIMENTAL)",
@@ -213,8 +246,11 @@ var AppHelpFlagGroups = []flagGroup{
 	{
 		Name: "DEPRECATED",
 		Flags: []cli.Flag{
-			utils.FastSyncFlag,
-			utils.LightModeFlag,
+			utils.MinerLegacyThreadsFlag,
+			utils.MinerLegacyGasTargetFlag,
+			utils.MinerLegacyGasPriceFlag,
+			utils.MinerLegacyEtherbaseFlag,
+			utils.MinerLegacyExtraDataFlag,
 		},
 	},
 	{

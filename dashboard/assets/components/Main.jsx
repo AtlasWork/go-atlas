@@ -20,27 +20,67 @@ import React, {Component} from 'react';
 
 import withStyles from 'material-ui/styles/withStyles';
 
-import Home from './Home';
-import {MENU} from './Common';
+import {MENU} from '../common';
+import Logs from './Logs';
+import Footer from './Footer';
 import type {Content} from '../types/content';
 
-// Styles for the Content component.
-const styles = theme => ({
+// styles contains the constant styles of the component.
+const styles = {
+	wrapper: {
+		display:       'flex',
+		flexDirection: 'column',
+		width:         '100%',
+	},
 	content: {
-		flexGrow:        1,
+		flex:      1,
+		overflow: 'auto',
+	},
+};
+
+// themeStyles returns the styles generated from the theme for the component.
+const themeStyles = theme => ({
+	content: {
 		backgroundColor: theme.palette.background.default,
 		padding:         theme.spacing.unit * 3,
-		overflow:        'auto',
 	},
 });
+
 export type Props = {
-	classes: Object,
-	active: string,
-	content: Content,
+	classes:      Object,
+	active:       string,
+	content:      Content,
 	shouldUpdate: Object,
+	send:         string => void,
 };
+
 // Main renders the chosen content.
 class Main extends Component<Props> {
+	constructor(props) {
+		super(props);
+		this.container = React.createRef();
+		this.content = React.createRef();
+	}
+
+	getSnapshotBeforeUpdate() {
+		if (this.content && typeof this.content.beforeUpdate === 'function') {
+			return this.content.beforeUpdate();
+		}
+		return null;
+	}
+
+	componentDidUpdate(prevProps, prevState, snapshot) {
+		if (this.content && typeof this.content.didUpdate === 'function') {
+			this.content.didUpdate(prevProps, prevState, snapshot);
+		}
+	}
+
+	onScroll = () => {
+		if (this.content && typeof this.content.onScroll === 'function') {
+			this.content.onScroll();
+		}
+	};
+
 	render() {
 		const {
 			classes, active, content, shouldUpdate,
@@ -49,8 +89,6 @@ class Main extends Component<Props> {
 		let children = null;
 		switch (active) {
 		case MENU.get('home').id:
-			children = <Home memory={content.home.memory} traffic={content.home.traffic} shouldUpdate={shouldUpdate} />;
-			break;
 		case MENU.get('chain').id:
 		case MENU.get('txpool').id:
 		case MENU.get('network').id:
@@ -58,11 +96,35 @@ class Main extends Component<Props> {
 			children = <div>Work in progress.</div>;
 			break;
 		case MENU.get('logs').id:
-			children = <div>{content.logs.log.map((log, index) => <div key={index}>{log}</div>)}</div>;
+			children = (
+				<Logs
+					ref={(ref) => { this.content = ref; }}
+					container={this.container}
+					send={this.props.send}
+					content={this.props.content}
+					shouldUpdate={shouldUpdate}
+				/>
+			);
 		}
 
-		return <div className={classes.content}>{children}</div>;
+		return (
+			<div style={styles.wrapper}>
+				<div
+					className={classes.content}
+					style={styles.content}
+					ref={(ref) => { this.container = ref; }}
+					onScroll={this.onScroll}
+				>
+					{children}
+				</div>
+				<Footer
+					general={content.general}
+					system={content.system}
+					shouldUpdate={shouldUpdate}
+				/>
+			</div>
+		);
 	}
 }
 
-export default withStyles(styles)(Main);
+export default withStyles(themeStyles)(Main);

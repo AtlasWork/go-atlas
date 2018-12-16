@@ -41,7 +41,7 @@ var dashboardContent = `
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 
-		<title>{{.NetworkTitle}}: Ethereum Testnet</title>
+		<title>{{.NetworkTitle}}: Atlas Testnet</title>
 
 		<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
 		<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -100,7 +100,7 @@ var dashboardContent = `
 					<div id="geth" hidden style="padding: 16px;">
 						<div class="page-title">
 							<div class="title_left">
-								<h3>Connect Yourself &ndash; Go Ethereum: Geth</h3>
+								<h3>Connect Yourself &ndash; Go Atlas: Geth</h3>
 							</div>
 						</div>
 						<div class="clearfix"></div>
@@ -117,7 +117,7 @@ var dashboardContent = `
 										<br/>
 										<p>To run an archive node, download <a href="/{{.GethGenesis}}"><code>{{.GethGenesis}}</code></a> and start Geth with:
 											<pre>geth --datadir=$HOME/.{{.Network}} init {{.GethGenesis}}</pre>
-											<pre>geth --networkid={{.NetworkID}} --datadir=$HOME/.{{.Network}} --cache=1024 --syncmode=full{{if .Ethstats}} --ethstats='{{.Ethstats}}'{{end}} --bootnodes={{.BootnodesFullFlat}}</pre>
+											<pre>geth --networkid={{.NetworkID}} --datadir=$HOME/.{{.Network}} --cache=1024 --syncmode=full{{if .Ethstats}} --ethstats='{{.Ethstats}}'{{end}} --bootnodes={{.BootnodesFlat}}</pre>
 										</p>
 										<br/>
 										<p>You can download Geth from <a href="https://geth.ethereum.org/downloads/" target="about:blank">https://geth.ethereum.org/downloads/</a>.</p>
@@ -136,7 +136,7 @@ var dashboardContent = `
 										<br/>
 										<p>To run a full node, download <a href="/{{.GethGenesis}}"><code>{{.GethGenesis}}</code></a> and start Geth with:
 											<pre>geth --datadir=$HOME/.{{.Network}} init {{.GethGenesis}}</pre>
-											<pre>geth --networkid={{.NetworkID}} --datadir=$HOME/.{{.Network}} --cache=512{{if .Ethstats}} --ethstats='{{.Ethstats}}'{{end}} --bootnodes={{.BootnodesFullFlat}}</pre>
+											<pre>geth --networkid={{.NetworkID}} --datadir=$HOME/.{{.Network}} --cache=512{{if .Ethstats}} --ethstats='{{.Ethstats}}'{{end}} --bootnodes={{.BootnodesFlat}}</pre>
 										</p>
 										<br/>
 										<p>You can download Geth from <a href="https://geth.ethereum.org/downloads/" target="about:blank">https://geth.ethereum.org/downloads/</a>.</p>
@@ -158,7 +158,7 @@ var dashboardContent = `
 										<br/>
 										<p>To run a light node, download <a href="/{{.GethGenesis}}"><code>{{.GethGenesis}}</code></a> and start Geth with:
 											<pre>geth --datadir=$HOME/.{{.Network}} init {{.GethGenesis}}</pre>
-											<pre>geth --networkid={{.NetworkID}} --datadir=$HOME/.{{.Network}} --syncmode=light{{if .Ethstats}} --ethstats='{{.Ethstats}}'{{end}} --bootnodes={{.BootnodesLightFlat}}</pre>
+											<pre>geth --networkid={{.NetworkID}} --datadir=$HOME/.{{.Network}} --syncmode=light{{if .Ethstats}} --ethstats='{{.Ethstats}}'{{end}} --bootnodes={{.BootnodesFlat}}</pre>
 										</p>
 										<br/>
 										<p>You can download Geth from <a href="https://geth.ethereum.org/downloads/" target="about:blank">https://geth.ethereum.org/downloads/</a>.</p>
@@ -177,7 +177,7 @@ var dashboardContent = `
 										<br/>
 										<p>To run an embedded node, download <a href="/{{.GethGenesis}}"><code>{{.GethGenesis}}</code></a> and start Geth with:
 											<pre>geth --datadir=$HOME/.{{.Network}} init {{.GethGenesis}}</pre>
-											<pre>geth --networkid={{.NetworkID}} --datadir=$HOME/.{{.Network}} --cache=16 --ethash.cachesinmem=1 --syncmode=light{{if .Ethstats}} --ethstats='{{.Ethstats}}'{{end}} --bootnodes={{.BootnodesLightFlat}}</pre>
+											<pre>geth --networkid={{.NetworkID}} --datadir=$HOME/.{{.Network}} --cache=16 --ethash.cachesinmem=1 --syncmode=light{{if .Ethstats}} --ethstats='{{.Ethstats}}'{{end}} --bootnodes={{.BootnodesFlat}}</pre>
 										</p>
 										<br/>
 										<p>You can download Geth from <a href="https://geth.ethereum.org/downloads/" target="about:blank">https://geth.ethereum.org/downloads/</a>.</p>
@@ -208,7 +208,7 @@ var dashboardContent = `
 											<pre>geth --datadir=$HOME/.{{.Network}} init {{.GethGenesis}}</pre>
 										</p>
 										<p>With your local chain initialized, you can start the Ethereum Wallet:
-											<pre>ethereumwallet --rpc $HOME/.{{.Network}}/geth.ipc --node-networkid={{.NetworkID}} --node-datadir=$HOME/.{{.Network}}{{if .Ethstats}} --node-ethstats='{{.Ethstats}}'{{end}} --node-bootnodes={{.BootnodesFullFlat}}</pre>
+											<pre>ethereumwallet --rpc $HOME/.{{.Network}}/geth.ipc --node-networkid={{.NetworkID}} --node-datadir=$HOME/.{{.Network}}{{if .Ethstats}} --node-ethstats='{{.Ethstats}}'{{end}} --node-bootnodes={{.BootnodesFlat}}</pre>
 										<p>
 										<br/>
 										<p>You can download the Ethereum Wallet from <a href="https://github.com/ethereum/mist/releases" target="about:blank">https://github.com/ethereum/mist/releases</a>.</p>
@@ -229,7 +229,7 @@ var dashboardContent = `
 											<pre>geth --datadir=$HOME/.{{.Network}} init {{.GethGenesis}}</pre>
 										</p>
 										<p>With your local chain initialized, you can start Mist:
-											<pre>mist --rpc $HOME/.{{.Network}}/geth.ipc --node-networkid={{.NetworkID}} --node-datadir=$HOME/.{{.Network}}{{if .Ethstats}} --node-ethstats='{{.Ethstats}}'{{end}} --node-bootnodes={{.BootnodesFullFlat}}</pre>
+											<pre>mist --rpc $HOME/.{{.Network}}/geth.ipc --node-networkid={{.NetworkID}} --node-datadir=$HOME/.{{.Network}}{{if .Ethstats}} --node-ethstats='{{.Ethstats}}'{{end}} --node-bootnodes={{.BootnodesFlat}}</pre>
 										<p>
 										<br/>
 										<p>You can download the Mist browser from <a href="https://github.com/ethereum/mist/releases" target="about:blank">https://github.com/ethereum/mist/releases</a>.</p>
@@ -261,7 +261,7 @@ var dashboardContent = `
 										<p>Inside your Java code you can now import the geth archive and connect to Ethereum:
 											<pre>import org.ethereum.geth.*;</pre>
 <pre>
-Enodes bootnodes = new Enodes();{{range .BootnodesLight}}
+Enodes bootnodes = new Enodes();{{range .Bootnodes}}
 bootnodes.append(new Enode("{{.}}"));{{end}}
 
 NodeConfig config = new NodeConfig();
@@ -294,7 +294,7 @@ node.start();
 <pre>
 var error: NSError?
 
-let bootnodes = GethNewEnodesEmpty(){{range .BootnodesLight}}
+let bootnodes = GethNewEnodesEmpty(){{range .Bootnodes}}
 bootnodes?.append(GethNewEnode("{{.}}", &error)){{end}}
 
 let config = GethNewNodeConfig()
@@ -595,44 +595,43 @@ func deployDashboard(client *sshClient, network string, conf *config, config *da
 		statsLogin = ""
 	}
 	indexfile := new(bytes.Buffer)
-	bootCpp := make([]string, len(conf.bootFull))
-	for i, boot := range conf.bootFull {
+	bootCpp := make([]string, len(conf.bootnodes))
+	for i, boot := range conf.bootnodes {
 		bootCpp[i] = "required:" + strings.TrimPrefix(boot, "enode://")
 	}
-	bootHarmony := make([]string, len(conf.bootFull))
-	for i, boot := range conf.bootFull {
+	bootHarmony := make([]string, len(conf.bootnodes))
+	for i, boot := range conf.bootnodes {
 		bootHarmony[i] = fmt.Sprintf("-Dpeer.active.%d.url=%s", i, boot)
 	}
-	bootPython := make([]string, len(conf.bootFull))
-	for i, boot := range conf.bootFull {
+	bootPython := make([]string, len(conf.bootnodes))
+	for i, boot := range conf.bootnodes {
 		bootPython[i] = "'" + boot + "'"
 	}
 	template.Must(template.New("").Parse(dashboardContent)).Execute(indexfile, map[string]interface{}{
-		"Network":            network,
-		"NetworkID":          conf.Genesis.Config.ChainId,
-		"NetworkTitle":       strings.Title(network),
-		"EthstatsPage":       config.ethstats,
-		"ExplorerPage":       config.explorer,
-		"WalletPage":         config.wallet,
-		"FaucetPage":         config.faucet,
-		"GethGenesis":        network + ".json",
-		"BootnodesFull":      conf.bootFull,
-		"BootnodesLight":     conf.bootLight,
-		"BootnodesFullFlat":  strings.Join(conf.bootFull, ","),
-		"BootnodesLightFlat": strings.Join(conf.bootLight, ","),
-		"Ethstats":           statsLogin,
-		"Ethash":             conf.Genesis.Config.Ethash != nil,
-		"CppGenesis":         network + "-cpp.json",
-		"CppBootnodes":       strings.Join(bootCpp, " "),
-		"HarmonyGenesis":     network + "-harmony.json",
-		"HarmonyBootnodes":   strings.Join(bootHarmony, " "),
-		"ParityGenesis":      network + "-parity.json",
-		"PythonGenesis":      network + "-python.json",
-		"PythonBootnodes":    strings.Join(bootPython, ","),
-		"Homestead":          conf.Genesis.Config.HomesteadBlock,
-		"Tangerine":          conf.Genesis.Config.EIP150Block,
-		"Spurious":           conf.Genesis.Config.EIP155Block,
-		"Byzantium":          conf.Genesis.Config.ByzantiumBlock,
+		"Network":          network,
+		"NetworkID":        conf.Genesis.Config.ChainID,
+		"NetworkTitle":     strings.Title(network),
+		"EthstatsPage":     config.ethstats,
+		"ExplorerPage":     config.explorer,
+		"WalletPage":       config.wallet,
+		"FaucetPage":       config.faucet,
+		"GethGenesis":      network + ".json",
+		"Bootnodes":        conf.bootnodes,
+		"BootnodesFlat":    strings.Join(conf.bootnodes, ","),
+		"Ethstats":         statsLogin,
+		"Ethash":           conf.Genesis.Config.Ethash != nil,
+		"CppGenesis":       network + "-cpp.json",
+		"CppBootnodes":     strings.Join(bootCpp, " "),
+		"HarmonyGenesis":   network + "-harmony.json",
+		"HarmonyBootnodes": strings.Join(bootHarmony, " "),
+		"ParityGenesis":    network + "-parity.json",
+		"PythonGenesis":    network + "-python.json",
+		"PythonBootnodes":  strings.Join(bootPython, ","),
+		"Homestead":        conf.Genesis.Config.HomesteadBlock,
+		"Tangerine":        conf.Genesis.Config.EIP150Block,
+		"Spurious":         conf.Genesis.Config.EIP155Block,
+		"Byzantium":        conf.Genesis.Config.ByzantiumBlock,
+		"Constantinople":   conf.Genesis.Config.ConstantinopleBlock,
 	})
 	files[filepath.Join(workdir, "index.html")] = indexfile.Bytes()
 
@@ -641,7 +640,7 @@ func deployDashboard(client *sshClient, network string, conf *config, config *da
 	files[filepath.Join(workdir, network+".json")] = genesis
 
 	if conf.Genesis.Config.Ethash != nil {
-		cppSpec, err := newCppEthereumGenesisSpec(network, conf.Genesis)
+		cppSpec, err := newAlethGenesisSpec(network, conf.Genesis)
 		if err != nil {
 			return nil, err
 		}
@@ -651,7 +650,7 @@ func deployDashboard(client *sshClient, network string, conf *config, config *da
 		harmonySpecJSON, _ := conf.Genesis.MarshalJSON()
 		files[filepath.Join(workdir, network+"-harmony.json")] = harmonySpecJSON
 
-		paritySpec, err := newParityChainSpec(network, conf.Genesis, conf.bootFull)
+		paritySpec, err := newParityChainSpec(network, conf.Genesis, conf.bootnodes)
 		if err != nil {
 			return nil, err
 		}
@@ -679,12 +678,12 @@ func deployDashboard(client *sshClient, network string, conf *config, config *da
 
 	// Build and deploy the dashboard service
 	if nocache {
-		return nil, client.Stream(fmt.Sprintf("cd %s && docker-compose -p %s build --pull --no-cache && docker-compose -p %s up -d --force-recreate", workdir, network, network))
+		return nil, client.Stream(fmt.Sprintf("cd %s && docker-compose -p %s build --pull --no-cache && docker-compose -p %s up -d --force-recreate --timeout 60", workdir, network, network))
 	}
-	return nil, client.Stream(fmt.Sprintf("cd %s && docker-compose -p %s up -d --build --force-recreate", workdir, network))
+	return nil, client.Stream(fmt.Sprintf("cd %s && docker-compose -p %s up -d --build --force-recreate --timeout 60", workdir, network))
 }
 
-// dashboardInfos is returned from an dashboard status check to allow reporting
+// dashboardInfos is returned from a dashboard status check to allow reporting
 // various configuration parameters.
 type dashboardInfos struct {
 	host    string

@@ -16,38 +16,81 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-import type {ChartEntry} from './message';
-
 export type Content = {
-    home: Home,
-    chain: Chain,
-    txpool: TxPool,
-    network: Network,
-    system: System,
-    logs: Logs,
+	general: General,
+	home:    Home,
+	chain:   Chain,
+	txpool:  TxPool,
+	network: Network,
+	system:  System,
+	logs:    Logs,
+};
+
+export type ChartEntries = Array<ChartEntry>;
+
+export type ChartEntry = {
+	time:  Date,
+	value: number,
+};
+
+export type General = {
+	version: ?string,
+	commit:  ?string,
 };
 
 export type Home = {
-    memory: Array<ChartEntry>,
-    traffic: Array<ChartEntry>,
+	/* TODO (kurkomisi) */
 };
 
 export type Chain = {
-    /* TODO (kurkomisi) */
+	/* TODO (kurkomisi) */
 };
 
 export type TxPool = {
-    /* TODO (kurkomisi) */
+	/* TODO (kurkomisi) */
 };
 
 export type Network = {
-    /* TODO (kurkomisi) */
+	/* TODO (kurkomisi) */
 };
 
 export type System = {
-    /* TODO (kurkomisi) */
+	activeMemory:   ChartEntries,
+	virtualMemory:  ChartEntries,
+	networkIngress: ChartEntries,
+	networkEgress:  ChartEntries,
+	processCPU:     ChartEntries,
+	systemCPU:      ChartEntries,
+	diskRead:       ChartEntries,
+	diskWrite:      ChartEntries,
+};
+
+export type Record = {
+	t:   string,
+	lvl: Object,
+	msg: string,
+	ctx: Array<string>
+};
+
+export type Chunk = {
+	content: string,
+	name:    string,
 };
 
 export type Logs = {
-    log: Array<string>,
+	chunks:        Array<Chunk>,
+	endTop:        boolean,
+	endBottom:     boolean,
+	topChanged:    number,
+	bottomChanged: number,
+};
+
+export type LogsMessage = {
+	source: ?LogFile,
+	chunk:  Array<Record>,
+};
+
+export type LogFile = {
+	name: string,
+	last: string,
 };
