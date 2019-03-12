@@ -58,9 +58,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/internal/build"
-	"github.com/ethereum/go-ethereum/params"
-	sv "github.com/ethereum/go-ethereum/swarm/version"
+	"github.com/eAtlasWork/go-atlas/internal/build"
+	"github.com/AtlasWork/go-atlas/params"
+	sv "github.com/AtlasWork/go-atlas/swarm/version"
 )
 
 var (
