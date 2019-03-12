@@ -13,6 +13,5 @@ RUN apk add --no-cache ca-certificates
 COPY --from=builder /go-atlas/build/bin/geth /usr/local/bin/
 
 EXPOSE 57200 57200 30303 30303/udp 30304/udp
-https://raw.githubusercontent.com/AtlasWork/go-atlas/master/AtlasGenesisMainNet.json
 ENTRYPOINT ["./geth", "init", "--datadir ~/.atlaschain" , "../../AtlasGenesisMainNet.json"]
 ENTRYPOINT ["./geth", "--datadir ~/.atlaschain/",  "--networkid 9082075", "--port 57200", "--rpcport 8080", "console", "--fast", "--cache=512"]
