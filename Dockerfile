@@ -1,10 +1,15 @@
 # Build Geth in a stock Go builder container
 FROM golang:1.11-alpine as builder
 
+RUN apk update && apk upgrade && \
+    apk add --no-cache bash git   
+
+RUN go get github.com/AtlasWork/go-atlas
+
 RUN \
   apk add --update go git make gcc musl-dev linux-headers ca-certificates && \
   git clone --depth 1 https://github.com/AtlasWork/go-atlas && \
-  (cd go-atlas && make geth) && \
+  (cd go-atlas && make all) && \
   cp go-atlas/AtlasGenesisMainNet.json /geth && \
   cp go-atlas/build/bin/geth /geth && \
   apk del go git make gcc musl-dev linux-headers && \
