@@ -1,6 +1,9 @@
 # Build Geth in a stock Go builder container
 FROM golang:1.11-alpine as builder
 
+RUN apk update && apk upgrade && \
+    apk add --no-cache bash git
+
 RUN apk add --no-cache make gcc musl-dev linux-headers
 RUN go get github.com/AtlasWork/go-atlas
 
