@@ -58,7 +58,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/eAtlasWork/go-atlas/internal/build"
+	"github.com/AtlasWork/go-atlas/internal/build"
 	"github.com/AtlasWork/go-atlas/params"
 	sv "github.com/AtlasWork/go-atlas/swarm/version"
 )
@@ -588,7 +588,7 @@ func (d debExecutable) Package() string {
 func newDebMetadata(distro, author string, env build.Environment, t time.Time, name string, version string, exes []debExecutable) debMetadata {
 	if author == "" {
 		// No signing key, use default author.
-		author = "Ethereum Builds <fjl@ethereum.org>"
+		author = "Atlas Builds <info@atlas.work>"
 	}
 	return debMetadata{
 		PackageName: name,
