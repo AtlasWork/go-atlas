@@ -8,7 +8,7 @@ RUN apk add --no-cache make gcc musl-dev linux-headers
 RUN go get github.com/AtlasWork/go-atlas
 
 ADD . /go-atlas
-RUN cd /go-atlas && make geth
+RUN cd /go-atlas && make all
 
 # Pull Geth into a second stage deploy alpine container
 FROM alpine:latest
