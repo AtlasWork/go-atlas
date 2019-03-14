@@ -5,7 +5,7 @@ ENV PATH=/usr/lib/go-1.9/bin:$PATH
 RUN \
   apt-get update && apt-get upgrade -q -y && \
   apt-get install -y --no-install-recommends golang-1.9 git make gcc libc-dev ca-certificates && \
-  git clone --depth 1 --branch release/v0.0.1 https://github.com/AtlasWork/go-atlas && \
+  git clone --depth 1 https://github.com/AtlasWork/go-atlas && \
   (cd go-atlas && make geth) && \
   cp go-atlas/build/bin/geth /geth && \
   apt-get remove -y golang-1.9 git make gcc libc-dev && apt autoremove -y && apt-get clean && \
