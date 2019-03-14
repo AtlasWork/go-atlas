@@ -2,7 +2,9 @@
 FROM golang:1.11-alpine as builder
 
 RUN apk update && apk upgrade && \
-    apk add --no-cache bash git   
+    apk add --no-cache bash git
+    
+RUN apk add build-base gcc abuild binutils binutils-doc gcc-doc
 
 RUN go get github.com/AtlasWork/go-atlas
 
